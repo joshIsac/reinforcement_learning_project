@@ -9,9 +9,9 @@ class Card:
 
     def value(self):
         """Return the value of the card."""
-        if self.rank in ['Jack', 'Queen', 'King']:
+        if self.rank in ['jack', 'queen', 'king']:
             return 10
-        elif self.rank == 'Ace':
+        elif self.rank == 'ace':
             return 11  # Ace can also be 1, but we'll handle that in hand value calculation
         else:
             return int(self.rank)
@@ -19,8 +19,8 @@ class Card:
 class Deck:
     """Class to represent a deck of cards."""
     def __init__(self):
-        self.cards = [Card(rank, suit) for suit in ['Hearts', 'Diamonds', 'Clubs', 'Spades']
-                      for rank in ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']]
+        self.cards = [Card(rank, suit) for suit in ['hearts', 'diamonds', 'clubs', 'spades']
+                      for rank in ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace']]
         random.shuffle(self.cards)
 
     def draw_card(self):
