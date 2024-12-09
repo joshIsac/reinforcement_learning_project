@@ -82,9 +82,12 @@ class BlackjackEnv:
         if action == 1:  # Hit
             self.player_hand.add_card(self.deck.draw_card())
             if self.player_hand.value() > 21:  # Player busts
+                print("Player busts!")
                 return self.get_state(), -1, True  # Lose
+             
         else:  # Stick
             while self.dealer_hand.value() < 17:
+                print("Dealer hits.")
                 self.dealer_hand.add_card(self.deck.draw_card())
 
             # Determine the winner
@@ -92,8 +95,11 @@ class BlackjackEnv:
             dealer_value = self.dealer_hand.value()
 
             if dealer_value > 21 or player_value > dealer_value:
+                print("Player wins!")
                 return self.get_state(), 1, True  # Win
+            
             elif player_value < dealer_value:
+                print("Dealer wins!")
                 return self.get_state(), -1, True  # Lose
             else:
                 return self.get_state(), 0, True  # Draw
