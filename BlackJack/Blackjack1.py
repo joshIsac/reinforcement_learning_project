@@ -1,4 +1,5 @@
 import random
+import numpy as np
 
 class Card:
     """Class to represent a single card."""
@@ -45,60 +46,132 @@ class Hand:
             aces -= 1
         return total
 
-class BlackjackGame:
-    """Class to represent the Blackjack game."""
+    def usable_ace(self):
+        """Check if the hand has a usable Ace."""
+        return any(card.rank == 'Ace' for card in self.cards) and self.value() + 10 <= 21
+
+class BlackjackEnv:
+    """Class to represent the Blackjack environment."""
     def __init__(self):
         self.deck = Deck()
         self.player_hand = Hand()
         self.dealer_hand = Hand()
 
-    def start_game(self):
-        """Start a new game of Blackjack."""
+    def reset(self):
+        """Reset the environment for a new game."""
+        self.deck = Deck()
+        self.player_hand = Hand()
+        self.dealer_hand = Hand()
+
         self.player_hand.add_card(self.deck.draw_card())
         self.player_hand.add_card(self.deck.draw_card())
         self.dealer_hand.add_card(self.deck.draw_card())
         self.dealer_hand.add_card(self.deck.draw_card())
 
-        self.player_turn()
+        return self.get_state()
 
-    def player_turn(self):
-        """Handle the player's turn."""
-        while True:
-            print(f"Your hand: {[card.rank for card in self.player_hand.cards]} (Value: {self.player_hand.value()})")
-            print(f"Dealer's visible card: {self.dealer_hand.cards[0].rank}")
-
-            if self.player_hand.value() > 21:
-                print("You bust! Dealer wins.")
-                return
-
-            action = input("Choose 'hit' or 'stick': ").lower()
-            if action == 'hit':
-                self.player_hand.add_card(self.deck.draw_card())
-            elif action == 'stick':
-                self.dealer_turn()
-                return
-
-    def dealer_turn(self):
-        """Handle the dealer's turn."""
-        while self.dealer_hand.value() < 17:
-            self.dealer_hand.add_card(self.deck.draw_card())
-
-        print(f"Dealer's hand: {[card.rank for card in self.dealer_hand.cards]} (Value: {self.dealer_hand.value()})")
-        self.determine_winner()
-
-    def determine_winner(self):
-        """Determine the winner of the game."""
+    def get_state(self):
+        """Return the current state of the game."""
         player_value = self.player_hand.value()
-        dealer_value = self.dealer_hand.value()
+        dealer_visible_card = self.dealer_hand.cards[0].value()
+        usable_ace = self.player_hand.usable_ace()
+        return (player_value, dealer_visible_card, usable_ace)
 
-        if dealer_value > 21 or player_value > dealer_value:
-            print("You win!")
-        elif player_value < dealer_value:
-            print("Dealer wins!")
-        else:
-            print("It's a tie!")
+    def step(self, action):
+        """Take an action in the environment."""
+        if action == 1:  # Hit
+            self.player_hand.add_card(self.deck.draw_card())
+            if self.player_hand.value() > 21:  # Player busts
+                return self.get_state(), -1, True  # Lose
+        else:  # Stick
+            while self.dealer_hand.value() < 17:
+                self.dealer_hand.add_card(self.deck.draw_card())
 
-# To play the game
+            # Determine the winner
+            player_value = self.player_hand.value()
+            dealer_value = self.dealer_hand.value()
+
+            if dealer_value > 21 or player_value > dealer_value:
+                return self.get_state(), 1, True  # Win
+            elif player_value < dealer_value:
+                return self.get_state(), -1, True  # Lose
+            else:
+                return self.get_state(), 0, True  # Draw
+
+        return self.get_state(), -0.1, False  # Intermediate step penalty
+
+# Q-Learning implementation
+def q_learning(num_episodes=1000, alpha=0.1, gamma=0.9, epsilon=0.1):
+    """Train an agent to play Blackjack using Q-Learning."""
+    env = BlackjackEnv()
+    q_table = np.zeros((32, 10, 2, 2))  # (Player value, Dealer card [2-11], Usable Ace, Actions)
+
+    for episode in range(num_episodes):
+        state = env.reset()
+        done = False
+
+        while not done:
+            player_value, dealer_visible_card, usable_ace = state
+            dealer_idx = dealer_visible_card - 2
+            state_idx = (min(player_value, 21), dealer_idx, int(usable_ace))
+            
+            # Epsilon-greedy action selection
+            if random.uniform(0, 1) < epsilon:
+                action = random.choice([0, 1])  # Explore
+            else:
+                action = np.argmax(q_table[state_idx])  # Exploit
+
+            next_state, reward, done = env.step(action)
+            next_player_value, next_dealer_visible_card, next_usable_ace = next_state
+            next_dealer_idx = next_dealer_visible_card - 2
+            next_state_idx = (min(next_player_value, 21), next_dealer_idx, int(next_usable_ace))
+
+            # Q-value update
+            q_table[state_idx][action] += alpha * (
+                reward + gamma * np.max(q_table[next_state_idx]) - q_table[state_idx][action]
+            )
+
+            state = next_state
+
+        # Print progress every 100 episodes
+        if (episode + 1) % 100 == 0:
+            print(f"Episode {episode + 1}/{num_episodes} complete.")
+
+    return q_table
+
+def play_user_vs_dealer():
+    """Let the user play against the dealer."""
+    env = BlackjackEnv()
+    state = env.reset()
+    done = False
+    print("\nStarting a new game of Blackjack!")
+
+    while not done:
+        print(f"\nYour hand: {[(card.rank, card.suit) for card in env.player_hand.cards]}, Value: {env.player_hand.value()}")
+        print(f"Dealer's visible card: {env.dealer_hand.cards[0].rank} of {env.dealer_hand.cards[0].suit}")
+        
+        action = input("Enter 'h' to hit or 's' to stick: ").strip().lower()
+        action = 1 if action == 'h' else 0
+
+        state, reward, done = env.step(action)
+
+        if done:
+            print(f"\nYour final hand: {[(card.rank, card.suit) for card in env.player_hand.cards]}, Value: {env.player_hand.value()}")
+            print(f"Dealer's final hand: {[(card.rank, card.suit) for card in env.dealer_hand.cards]}, Value: {env.dealer_hand.value()}")
+            if reward > 0:
+                print("You win!")
+            elif reward < 0:
+                print("Dealer wins!")
+            else:
+                print("It's a tie!")
+            print("Game Over.\n")
+
+# Main Program
 if __name__ == "__main__":
-    game = BlackjackGame()
-    game.start_game()
+    print("Training the agent using Q-learning...")
+    q_table = q_learning(num_episodes=1000)
+    print("Training complete!\n")
+
+    # Let the user play 3 games against the dealer
+    for _ in range(3):
+        play_user_vs_dealer()
