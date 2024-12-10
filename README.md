@@ -1,3 +1,6 @@
+THIS IS A GROUP PROJECT DONE BY JOSHWIN ISAC AND SAI DARSHAN
+
+
 BLACK JACK:
 We all know about the game Black Jack game also known to be 21 a card game where players try to get closer to 21 than the dealer and 
 
@@ -82,19 +85,23 @@ Convergence: Under certain conditions, such as ensuring all state-action pairs a
 
 
 main game page:
+
 ![image](https://github.com/user-attachments/assets/aa449ade-b60a-46db-94c3-eb48f96b3fab)
 
 
 
-player Busted 
+player Busted :
+
 ![image](https://github.com/user-attachments/assets/ce4bcfde-cecf-4114-8822-af6708f87f1d)
 
 
 
 dealer win:
+
 ![image](https://github.com/user-attachments/assets/d51a1bb5-be50-49b8-a933-b2ce1476da5f)
 
 
 
 player wins:
+
 ![image](https://github.com/user-attachments/assets/7f6dbd6c-79a9-4711-96e5-c03ba28cfc1f)
